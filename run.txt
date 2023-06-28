@@ -1,0 +1,3 @@
+--is_training 1 --model_id test --model Autoformer --data ETTh1
+
+python run.py --is_training 1 --model_id test --model Informer --data ETTh1
