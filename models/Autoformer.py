@@ -97,8 +97,10 @@ class Model(nn.Module):
 
         # decomp init
         # 因为需要使用生成式预测，所以需要用均值和0来占位，占住预测部分的位置。
-        mean = torch.mean(x_enc, dim=1).unsqueeze(1).repeat(1, self.pred_len, 1)
-        zeros = torch.zeros([x_dec.shape[0], self.pred_len, x_dec.shape[2]], device=x_enc.device)
+        # 前x_enc.length为实际label，在第 2 维度（通常是时间步维度）上重复 self.pred_len 次。这通常用于生成一个与输入张量具有相同形状但值为均值的张量。
+        mean = torch.mean(x_enc, dim=1).unsqueeze(1).repeat(1, self.pred_len, 1) # 32 * 256 * 7
+        zeros = torch.zeros([x_dec.shape[0], self.pred_len, x_dec.shape[2]], device=x_enc.device) # 32 * 256 * 7
+        # 获取趋势项和季节项
         seasonal_init, trend_init = self.decomp(x_enc)
         # decoder input
         trend_init = torch.cat([trend_init[:, -self.label_len:, :], mean], dim=1)

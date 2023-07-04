@@ -27,10 +27,11 @@ class moving_avg(nn.Module):
         self.avg = nn.AvgPool1d(kernel_size=kernel_size, stride=stride, padding=0)
 
     def forward(self, x):
-        # padding on the both ends of time series
-        front = x[:, 0:1, :].repeat(1, (self.kernel_size - 1) // 2, 1)
-        end = x[:, -1:, :].repeat(1, (self.kernel_size - 1) // 2, 1)
-        x = torch.cat([front, x, end], dim=1)
+        # padding on the both ends of time series 在时间序列的两端填充
+        # 是一个复制操作，用于在输入张量的前部插入重复的元素。
+        front = x[:, 0:1, :].repeat(1, (self.kernel_size - 1) // 2, 1) # 32 * 12 * 7
+        end = x[:, -1:, :].repeat(1, (self.kernel_size - 1) // 2, 1) # 32 * 12 * 7
+        x = torch.cat([front, x, end], dim=1) # 32 * 96 * 7
         x = self.avg(x.permute(0, 2, 1))
         x = x.permute(0, 2, 1)
         return x

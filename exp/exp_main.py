@@ -15,6 +15,7 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 
 warnings.filterwarnings('ignore')
 
@@ -42,6 +43,7 @@ class Exp_Main(Exp_Basic):
 
     def _select_optimizer(self):
         model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+        # model_sgd = optim.SGD(self.model.parameters(), lr=self.args.learning_rate)
         return model_optim
 
     def _select_criterion(self):
@@ -92,7 +94,6 @@ class Exp_Main(Exp_Basic):
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
-
         path = os.path.join(self.args.checkpoints, setting)
         if not os.path.exists(path):
             os.makedirs(path)
@@ -106,26 +107,32 @@ class Exp_Main(Exp_Basic):
         criterion = self._select_criterion()
 
         if self.args.use_amp:
+            # torch.cuda.amp.GradScaler() 是 PyTorch 中的一个用于混合精度训练的工具类，用于自动缩放梯度（Gradient Scaling）。
             scaler = torch.cuda.amp.GradScaler()
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
             train_loss = []
-
+            train_total_loss = []  # 用于存储每次迭代的loss
+            vali_total_loss = []  # 用于存储每次迭代的loss
+            test_total_loss = []  # 用于存储每次迭代的loss
             self.model.train()
             epoch_time = time.time()
+            # train_loader有__getitem__方法，在使用索引操作时，不需要显式调用 __getitem__() 方法。它会在需要时自动被调用，以提供索引功能。
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
-                batch_x = batch_x.float().to(self.device)
+                batch_x = batch_x.float().to(self.device) # 32 * 96 * 7
 
-                batch_y = batch_y.float().to(self.device)
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
+                batch_y = batch_y.float().to(self.device) # 32 * 304 * 7
+                batch_x_mark = batch_x_mark.float().to(self.device) # 32 * 96 * 4
+                batch_y_mark = batch_y_mark.float().to(self.device) # 32 * 304 * 4
 
-                # decoder input
-                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+                # decoder input 。mash操作
+                # 是一个用于创建与 batch_y[:, -self.args.pred_len:, :] 形状相同的全零张量的操作
+                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float() # 32 * 304 * 7
+                # 将输入数据的标签部分和模型的预测结果进行拼接，以便进行后续的计算或评估
+                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device) # 32 * 304 * 7
 
                 # encoder - decoder
                 if self.args.use_amp:
@@ -140,6 +147,7 @@ class Exp_Main(Exp_Basic):
                         batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                         loss = criterion(outputs, batch_y)
                         train_loss.append(loss.item())
+                        train_total_loss.append(loss.item())
                 else:
                     if self.args.output_attention:
                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -151,6 +159,7 @@ class Exp_Main(Exp_Basic):
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                     loss = criterion(outputs, batch_y)
                     train_loss.append(loss.item())
+                    train_total_loss.append(loss.item())
 
                 if (i + 1) % 100 == 0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
@@ -173,6 +182,7 @@ class Exp_Main(Exp_Basic):
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
 
+
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
             early_stopping(vali_loss, self.model, path)
@@ -184,7 +194,17 @@ class Exp_Main(Exp_Basic):
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
-
+        # print('train_total_loss:',train_total_loss)
+        plt.xlabel("iter index")
+        plt.ylabel("Loss value")
+        plt.title("AutoFormer")
+        plt.plot(range(len(train_total_loss)),train_total_loss)
+        nowTime = self.getNowTime()
+        model_name = 'Autoformer'
+        pngPath = 'pic/' +setting+ '.png'
+        # pngPath = 'pic/' +str(self.args.model)++model_name + str(self.args.label_len) + '_' +str(self.args.pred_len) + str(nowTime) + '.png'
+        plt.savefig(pngPath)
+        print(f"save png in {pngPath} success.")
         return
 
     def test(self, setting, test=0):
@@ -316,3 +336,7 @@ class Exp_Main(Exp_Basic):
         np.save(folder_path + 'real_prediction.npy', preds)
 
         return
+
+    def getNowTime(self):
+        nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H%M%S')
+        return nowTime

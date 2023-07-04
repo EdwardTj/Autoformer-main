@@ -56,10 +56,10 @@ class AutoCorrelation(nn.Module):
         head = values.shape[1]
         channel = values.shape[2]
         length = values.shape[3]
-        # index init
+        # index init 索引值初始化，类似于初始化自变量x，由于是多维处理，因此需要在各个维度上进行repeat
         init_index = torch.arange(length).unsqueeze(0).unsqueeze(0).unsqueeze(0)\
             .repeat(batch, head, channel, 1).to(values.device)
-        # find top k
+        # find top k 选取最大的几个时移因子
         top_k = int(self.factor * math.log(length))
         mean_value = torch.mean(torch.mean(corr, dim=1), dim=1)
         weights, delay = torch.topk(mean_value, top_k, dim=-1)
@@ -112,7 +112,7 @@ class AutoCorrelation(nn.Module):
             keys = keys[:, :L, :, :]
 
         # period-based dependencies
-        q_fft = torch.fft.rfft(queries.permute(0, 2, 3, 1).contiguous(), dim=-1)
+        q_fft = torch.fft.rfft(queries.permute(0, 2, 3, 1).contiguous(), dim=-1)        # revolution：EMD/VAE
         k_fft = torch.fft.rfft(keys.permute(0, 2, 3, 1).contiguous(), dim=-1)
         res = q_fft * torch.conj(k_fft)
         corr = torch.fft.irfft(res, n=L, dim=-1)

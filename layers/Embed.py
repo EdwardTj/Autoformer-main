@@ -153,5 +153,6 @@ class DataEmbedding_wo_pos(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x, x_mark):
+        # 值加趋势项
         x = self.value_embedding(x) + self.temporal_embedding(x_mark)
         return self.dropout(x)

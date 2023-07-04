@@ -2,6 +2,7 @@ from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Data
 from torch.utils.data import DataLoader
 
 data_dict = {
+    # 在此调用__getitem__方法
     'ETTh1': Dataset_ETT_hour,
     'ETTh2': Dataset_ETT_hour,
     'ETTm1': Dataset_ETT_minute,
@@ -11,6 +12,7 @@ data_dict = {
 
 
 def data_provider(args, flag):
+    # 在此调用__getitem__方法
     Data = data_dict[args.data]
     timeenc = 0 if args.embed != 'timeF' else 1
 
