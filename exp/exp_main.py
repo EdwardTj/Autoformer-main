@@ -199,10 +199,7 @@ class Exp_Main(Exp_Basic):
         plt.ylabel("Loss value")
         plt.title("AutoFormer")
         plt.plot(range(len(train_total_loss)),train_total_loss)
-        nowTime = self.getNowTime()
-        model_name = 'Autoformer'
-        pngPath = 'pic/' +setting+ '.png'
-        # pngPath = 'pic/' +str(self.args.model)++model_name + str(self.args.label_len) + '_' +str(self.args.pred_len) + str(nowTime) + '.png'
+        pngPath = './results/pic/' + setting + '.png'
         plt.savefig(pngPath)
         print(f"save png in {pngPath} success.")
         return
@@ -215,7 +212,7 @@ class Exp_Main(Exp_Basic):
 
         preds = []
         trues = []
-        folder_path = './test_results/' + setting + '/'
+        folder_path = './results/test_results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -270,7 +267,7 @@ class Exp_Main(Exp_Basic):
         print('test shape:', preds.shape, trues.shape)
 
         # result save
-        folder_path = './results/' + setting + '/'
+        folder_path = './results/results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -329,7 +326,7 @@ class Exp_Main(Exp_Basic):
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
 
         # result save
-        folder_path = './results/' + setting + '/'
+        folder_path = './results/results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 

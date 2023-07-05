@@ -114,7 +114,6 @@ def main():
                 args.des, ii)
 
             exp = Exp(args)  # set experiments
-            print(args)
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(setting)
 
